@@ -1,53 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<RelativeLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_width="wrap_content"
+    android:layout_height="300dp"
+    android:layout_marginTop="30dp"
+    android:orientation="vertical">
 
     <TextView
-        android:id="@+id/textView_dialog_deleteText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="27dp"
-        android:layout_marginLeft="85dp"
-        android:gravity="center_horizontal"
+        android:id="@+id/text"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight=".6"
+        android:gravity="center"
+        android:textStyle="bold"
         android:text="접속 가능한 핫스팟 정보입니다." />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="20dp"
 
-    <ListView
-        android:id="@+id/listView"
-        android:layout_width="wrap_content"
-        android:layout_height="230dp"
-        android:layout_alignTop="@+id/textView_dialog_deleteText"
-        android:layout_marginTop="30dp"
-        android:scrollbars="vertical">
+        android:scrollbars="vertical"
+        android:gravity="center"
+        android:layout_weight=".3">
 
-    </ListView>
+        <ListView
+            android:id="@+id/listView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@+id/textView_dialog_deleteText">
+        </ListView>
 
-    <Button
-        android:id="@+id/contactBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="87dp"
-        android:layout_marginTop="300dp"
-        android:layout_marginBottom="16dp"
-        android:backgroundTint="@color/blue"
-        android:textColor="@color/white"
-        android:text="접속" />
+    </LinearLayout>
 
-    <Button
-        android:id="@+id/cancelBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="187dp"
-        android:layout_marginTop="300dp"
-        android:layout_marginBottom="16dp"
-        android:backgroundTint="@color/blue"
-        android:text="취소"
-        android:textColor="@color/white" />
 
-</RelativeLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="20dp"
+        android:gravity="center"
+        android:layout_marginBottom="30dp"
+        android:layout_weight=".4">
+
+        <Button
+            android:id="@+id/contactBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="50dp"
+            android:layout_marginRight="10dp"
+            android:backgroundTint="@color/blue"
+            android:textColor="@color/white"
+            android:layout_weight=".1"
+            android:text="접속" />
+
+        <Button
+            android:id="@+id/cancelBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="50dp"
+            android:backgroundTint="@color/blue"
+            android:layout_weight=".1"
+            android:text="취소"
+            android:textColor="@color/white" />
+
+    </LinearLayout>
+
+
+
+</LinearLayout>

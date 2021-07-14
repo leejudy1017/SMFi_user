@@ -24,12 +24,29 @@
 
     </FrameLayout>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0.6"
+        android:background="@color/white">
+
+        <Button
+            android:id="@+id/link"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:stateListAnimator="@null"
+            android:textColor="@color/blue"
+            android:textStyle="bold"
+            android:backgroundTint="@color/tumyeongsaeg">
+        </Button>
+
+    </LinearLayout>
 
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_weight="1.2"
         android:scaleType="centerInside"
         android:background="@color/white"
         android:scrollbars="vertical"

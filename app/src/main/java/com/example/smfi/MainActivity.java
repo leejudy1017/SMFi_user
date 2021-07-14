@@ -127,6 +127,7 @@ public class MainActivity  extends FragmentActivity implements OnMapReadyCallbac
 
     GoogleMap mMap;
     Button hotspot;
+    Button link;
 
     //marker 모음 {이름, Marker}
     HashMap<String, Marker> markerMap = new HashMap<>();
@@ -153,6 +154,16 @@ public class MainActivity  extends FragmentActivity implements OnMapReadyCallbac
         arrayList = new ArrayList<>();
         hotspot = findViewById(R.id.hotspot);
         hotspot.setEnabled(false);
+        link = findViewById(R.id.link);
+        link.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(connectMarker!=null){
+                    CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLng(connectMarker.getPosition());
+                    mMap.moveCamera(cameraUpdate);
+                }
+            }
+        });
 
 
         //구글 맵 호출
@@ -451,6 +462,13 @@ public class MainActivity  extends FragmentActivity implements OnMapReadyCallbac
 
                 String markingPoint = "위도:" + String.format("%.4f",location.getLatitude()) + " 경도:" + String.format("%.4f",location.getLongitude());
                 Log.d(TAG, "onMarkingResult : " + markingPoint);
+
+                if(connectMarker!=null){
+                    link.setText("연결된 SMART HOT SPOT : "+connectMarker.getTitle());
+                }
+                else{
+                    link.setText("");
+                }
 
 
                 if(tracking==0){

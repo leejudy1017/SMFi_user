@@ -11,7 +11,8 @@
         android:id="@+id/text"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_weight=".6"
+        android:layout_marginTop="30dp"
+        android:layout_weight=".5"
         android:gravity="center"
         android:textStyle="bold"
         android:text="접속 가능한 핫스팟 정보입니다." />
@@ -20,17 +21,16 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginTop="20dp"
-
         android:scrollbars="vertical"
         android:gravity="center"
         android:layout_weight=".3">
 
-        <ListView
-            android:id="@+id/listView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignTop="@+id/textView_dialog_deleteText">
-        </ListView>
+        <Spinner
+            android:id="@+id/spinner"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:backgroundTint="@color/blue"
+            android:layout_margin="20dp" />
 
     </LinearLayout>
 

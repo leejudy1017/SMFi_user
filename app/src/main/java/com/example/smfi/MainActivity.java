@@ -24,12 +24,16 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ListPopupWindow;
 import android.widget.ListView;
 import android.widget.SearchView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -67,6 +71,7 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -99,6 +104,8 @@ public class MainActivity  extends FragmentActivity implements OnMapReadyCallbac
     private static final int UPDATE_INTERVAL_MS = 3000;  // 1초
     private static final int FASTEST_UPDATE_INTERVAL_MS = 100; // 0.5초
 
+    // 현재 접속한 marker
+    private Marker connectMarker = null;
 
     // onRequestPermissionsResult에서 수신된 결과에서 ActivityCompat.requestPermissions를 사용한 퍼미션 요청을 구별하기 위해 사용됩니다.
     private static final int PERMISSIONS_REQUEST_CODE = 100;
@@ -112,25 +119,17 @@ public class MainActivity  extends FragmentActivity implements OnMapReadyCallbac
     Location mCurrentLocatiion;
     LatLng currentPosition;
     int tracking ;
-    ListView listView;
-
+    ArrayList<String> arrayList;
 
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationRequest locationRequest;
     private Location location;
 
     GoogleMap mMap;
+    Button hotspot;
 
-    //marker 모음 {"place",[경도,위도]
-    HashMap<String, double[]> markerMap = new HashMap<>();
-    HashMap<String, Double> markerDistance = new HashMap<>();
-
-    List<String> nearMarker = new ArrayList<String>();
-    myAdapter adapter;
-    Double nearlat=0.0;
-    Double nearlon=0.0;
-
-    String selectedMarker ="";
+    //marker 모음 {이름, Marker}
+    HashMap<String, Marker> markerMap = new HashMap<>();
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
@@ -150,13 +149,11 @@ public class MainActivity  extends FragmentActivity implements OnMapReadyCallbac
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         mLayout = findViewById(R.id.layout_main);
-        listView =findViewById(R.id.listView);
         tracking=0;
+        arrayList = new ArrayList<>();
+        hotspot = findViewById(R.id.hotspot);
+        hotspot.setEnabled(false);
 
-        //임의의 안테나값 (서버연동 예정)
-        for (int i=1; i<1000;i++){
-            markerMap.put("O2I CN "+i, new double[]{Math.random()+37, Math.random()-123});
-        }
 
         //구글 맵 호출
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
@@ -164,78 +161,103 @@ public class MainActivity  extends FragmentActivity implements OnMapReadyCallbac
 
     }
 
-    public void onClick(View v) throws IOException {
+    public void onClick(View v) {
 
         switch (v.getId()) {
 
+            case R.id.logout:
+                Intent intent = new Intent(getApplication(),LoginActivity.class);
+                startActivity(intent);
+                finish();
+                break;
+
             case R.id.hotspot:
-                adapter = new myAdapter();
-                AlertDialog.Builder builder2 = new AlertDialog.Builder(MainActivity.this);
-                LayoutInflater inflater2 = getLayoutInflater();
-                View view2 = inflater2.inflate(R.layout.dialog_contect_list, null);
-                builder2.setView(view2);
-                final ListView listView = view2.findViewById(R.id.listView);
-                listView.setAdapter(adapter);
 
-                final Button contactBtn = (Button) view2.findViewById(R.id.contactBtn);
-                final Button cancelBtn = (Button) view2.findViewById(R.id.cancelBtn);
-
-                final AlertDialog dialog2 = builder2.create();
-
-                contactBtn.setOnClickListener(v14 -> {
-                    if(! (nearlat==0.0 && nearlon==0.0)){
-                        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLng(new LatLng(nearlat,nearlon));
-                        mMap.moveCamera(cameraUpdate);
+                arrayList.clear();
+                HashMap<String,Double> tempp = new HashMap<>();
+                Iterator<String> iterator = markerMap.keySet().iterator();
+                while(iterator.hasNext()){
+                    String key = iterator.next();
+                    Marker marker = markerMap.get(key);
+                    double temp = distance(marker.getPosition().latitude,marker.getPosition().longitude,location.getLatitude(),location.getLongitude(),"kilometer");
+                    if(temp<10){
+                        tempp.put(key,temp);
                     }
-                    dialog2.dismiss();
-                });
+                }
+                List<String> keySetList = new ArrayList<>(tempp.keySet());
+                Collections.sort(keySetList,((o1, o2) -> (tempp.get(o1).compareTo(tempp.get(o2)))));
 
-                cancelBtn.setOnClickListener(v16 -> dialog2.dismiss());
-                dialog2.show();
+                for(String key:keySetList){
+                    arrayList.add(key+" | 약 "+String.format("%.2f",tempp.get(key))+" km");
+                }
+
+                if(arrayList.size()==0){
+                    arrayList.add(" ");
+                }
+
+                Log.i("arraySize: ", String.valueOf(arrayList.size()));
+                Log.i("arrayList: ", String.valueOf(arrayList));
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                View view = getLayoutInflater().inflate(R.layout.dialog_contect_list, null);
+                builder.setView(view);
+
+                final Spinner spinner = (Spinner)view.findViewById(R.id.spinner);
+
+                //spinner 높이 제한
+                try{
+                    Field popup = Spinner.class.getDeclaredField("mPopup");
+                    popup.setAccessible(true);
+                    ListPopupWindow window = (ListPopupWindow) popup.get(spinner);
+                    window.setHeight(700);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                ArrayAdapter adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item,arrayList);
+                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+                    final String[] selected = {arrayList.get(0)};
+                    spinner.setAdapter(adapter);
+                    spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                            selected[0] = arrayList.get(position);
+                        }
+
+                        @Override
+                        public void onNothingSelected(AdapterView<?> parent) {
+                            selected[0] = arrayList.get(0);
+                        }
+                    });
+
+                    final Button contactBtn = (Button) view.findViewById(R.id.contactBtn);
+                    final Button cancelBtn = (Button) view.findViewById(R.id.cancelBtn);
+                    final AlertDialog dialog = builder.create();
+
+                    contactBtn.setOnClickListener(v14 -> {
+                        if(arrayList.size()==1 && arrayList.get(0)==" "){
+                            Toast.makeText(MainActivity.this, "접속 가능한 핫스팟이 없습니다. ", Toast.LENGTH_SHORT).show(); }
+                        else{
+                            String title = selected[0].split(" ")[2];
+                            Log.i("selected: ", selected[0]);
+                            Log.i("title: ", title);
+
+                            CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLng(markerMap.get("O2I CN " + title).getPosition());
+                            mMap.moveCamera(cameraUpdate);
+                        }
+                        dialog.dismiss();
+                    });
+
+                    cancelBtn.setOnClickListener(v16 -> dialog.dismiss());
+                    builder.setView(view);
+                    dialog.show();
+
                 break;
 
         }
     }
 
-    class myAdapter extends BaseAdapter{
-
-
-        @Override
-        public int getCount() {
-            return nearMarker.size();
-        }
-
-        @Override
-        public Object getItem(int position) {
-            return nearMarker.get(position);
-        }
-
-        @Override
-        public long getItemId(int position) {
-            return position;
-        }
-
-        @RequiresApi(api = Build.VERSION_CODES.N)
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-
-            Button view =new Button(getApplicationContext());
-
-            for(String key:markerDistance.keySet()){
-                view.setText(key);
-                view.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        nearlat = markerMap.get(nearMarker.get(position))[0];
-                        nearlon = markerMap.get(nearMarker.get(position))[1];
-                        Log.i(nearMarker.get(position),"경도: "+markerMap.get(nearMarker.get(position))[0]+" 위도: "+markerMap.get(nearMarker.get(position))[1]);
-                    }
-                });
-            }
-
-            return view;
-        }
-    }
 
 
     private static double distance(double lat1, double lon1, double lat2, double lon2, String unit) {
@@ -300,9 +322,11 @@ public class MainActivity  extends FragmentActivity implements OnMapReadyCallbac
             LayoutInflater inflater = getLayoutInflater();
 
 
-            if (distance(markerMap.get(marker.getTitle())[0],markerMap.get(marker.getTitle())[1], location.getLatitude(), location.getLongitude(), "kilometer") <= 10) {
+            if (distance(markerMap.get(marker.getTitle()).getPosition().latitude,markerMap.get(marker.getTitle()).getPosition().longitude, location.getLatitude(), location.getLongitude(), "kilometer") <= 10) {
 
-                if(selectedMarker.equals(marker.getTitle())){
+                if(connectMarker!=null && connectMarker.getTitle().equals(marker.getTitle())){
+
+                    //해제하시겠습니까
                     View view = inflater.inflate(R.layout.dialog_discontect_antenna, null);
                     builder.setView(view);
                     final Button discontactBtn = (Button) view.findViewById(R.id.discontactBtn);
@@ -317,16 +341,18 @@ public class MainActivity  extends FragmentActivity implements OnMapReadyCallbac
                         BitmapDrawable bitmapdraw = (BitmapDrawable)getResources().getDrawable(R.drawable.marker3);
                         Bitmap b = bitmapdraw.getBitmap();
                         Bitmap smallMarker = Bitmap.createScaledBitmap(b,90,150,false);
-                        selectedMarker = marker.getTitle();
+                        String markingPoint = "위도:" + String.format("%.4f",marker.getPosition().latitude)+ " 경도:" + String.format("%.4f",marker.getPosition().longitude);
+                        marker.setSnippet(markingPoint);
                         marker.setIcon(BitmapDescriptorFactory.fromBitmap(smallMarker));
-                        selectedMarker="";
+                        connectMarker=null;
                         dialog.dismiss();
                     });
                     dialog.show();
                 }
                 else{
 
-                    if(selectedMarker.equals("")){
+                    //설정하시겠습니까
+                    if(connectMarker==null){
                         View view = inflater.inflate(R.layout.dialog_contect_antenna, null);
                         builder.setView(view);
                         final Button contactBtn = (Button) view.findViewById(R.id.contactBtn);
@@ -338,22 +364,29 @@ public class MainActivity  extends FragmentActivity implements OnMapReadyCallbac
                         });
 
                         contactBtn.setOnClickListener(v -> {
+
                             BitmapDrawable bitmapdraw = (BitmapDrawable)getResources().getDrawable(R.drawable.marker4);
                             Bitmap b = bitmapdraw.getBitmap();
                             Bitmap smallMarker = Bitmap.createScaledBitmap(b,90,150,false);
-                            selectedMarker = marker.getTitle();
+
+                            marker.setSnippet("접속되었습니다.");
                             marker.setIcon(BitmapDescriptorFactory.fromBitmap(smallMarker));
+
+                            connectMarker = marker;
+
                             Toast.makeText(MainActivity.this, marker.getTitle()+" 에 연결되었습니다.", Toast.LENGTH_SHORT).show();
                             dialog.dismiss();
                         });
                         dialog.show();
                     }
+
+                    //해제 후 설정
                     else{
 
                         View view = inflater.inflate(R.layout.dialog_discontect, null);
                         builder.setView(view);
                         final TextView text = view.findViewById(R.id.text);
-                        text.setText(selectedMarker+" 와의 연결을 해제하겠습니까 ?");
+                        text.setText(connectMarker.getTitle()+" 와의 연결을 해제하겠습니까 ?");
 
                         final Button discontactBtn = (Button) view.findViewById(R.id.discontactBtn);
                         final Button cancelBtn = (Button) view.findViewById(R.id.cancelBtn);
@@ -364,13 +397,32 @@ public class MainActivity  extends FragmentActivity implements OnMapReadyCallbac
                         });
 
                         discontactBtn.setOnClickListener(v -> {
+                            String pre="" ;
 
-                            /////////////////중요 !! 마커 객체화해서 연결되어있던 마커 해제 ///////////////
+                            //이전 connection 해제
+                            BitmapDrawable bitmapdraw = (BitmapDrawable)getResources().getDrawable(R.drawable.marker3);
+                            Bitmap b = bitmapdraw.getBitmap();
+                            Bitmap smallMarker = Bitmap.createScaledBitmap(b,90,150,false);
+                            String markingPoint = "위도:" + String.format("%.4f",connectMarker.getPosition().latitude) + " 경도:" + String.format("%.4f",connectMarker.getPosition().longitude);
 
-                            Toast.makeText(MainActivity.this, selectedMarker+" 와 연결을 해제해야함", Toast.LENGTH_SHORT).show();
-                            CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLng(new LatLng(markerMap.get(selectedMarker)[0],markerMap.get(selectedMarker)[1]));
-                            mMap.moveCamera(cameraUpdate);
+                            connectMarker.setSnippet(markingPoint);
+                            connectMarker.setIcon(BitmapDescriptorFactory.fromBitmap(smallMarker));
+                            pre = connectMarker.getTitle();
 
+                            connectMarker=null;
+
+                            //새로운 connection 생성
+                            BitmapDrawable bitmapdraw2 = (BitmapDrawable)getResources().getDrawable(R.drawable.marker4);
+                            Bitmap b2 = bitmapdraw2.getBitmap();
+                            Bitmap smallMarker2 = Bitmap.createScaledBitmap(b2,90,150,false);
+
+                            marker.setSnippet("접속되었습니다.");
+                            marker.setIcon(BitmapDescriptorFactory.fromBitmap(smallMarker2));
+
+                            connectMarker = marker;
+
+
+                            Toast.makeText(MainActivity.this, pre+" 와 연결을 해제하고 \n"+marker.getTitle()+" 에 연결되었습니다.", Toast.LENGTH_SHORT).show();
                             dialog.dismiss();
                         });
                         dialog.show();
@@ -397,7 +449,7 @@ public class MainActivity  extends FragmentActivity implements OnMapReadyCallbac
                 location = locationList.get(locationList.size() - 1);
                 currentPosition = new LatLng(location.getLatitude(), location.getLongitude());
 
-                String markingPoint = "위도:" + location.getLatitude() + " 경도:" + location.getLongitude();
+                String markingPoint = "위도:" + String.format("%.4f",location.getLatitude()) + " 경도:" + String.format("%.4f",location.getLongitude());
                 Log.d(TAG, "onMarkingResult : " + markingPoint);
 
 
@@ -406,37 +458,29 @@ public class MainActivity  extends FragmentActivity implements OnMapReadyCallbac
                     setCurrentLocation(location);
                     mCurrentLocatiion = location;
 
+                    //임의의 안테나값 (서버연동 예정)
+                    for (int i=0; i<1000;i++){
 
-                    for (Map.Entry<String, double[]> elem : markerMap.entrySet()) {
-                        LatLng point = new LatLng(elem.getValue()[0], elem.getValue()[1]);
-                        String markerSnippet = " 위도: " + elem.getValue()[0] + " 경도: " + elem.getValue()[1];
-                        Log.i("markerMap", "key: " + elem.getKey() + markerSnippet);
+                        BitmapDrawable bitmapdraw = (BitmapDrawable) getResources().getDrawable(R.drawable.marker3);
+                        Bitmap b = bitmapdraw.getBitmap();
+                        Bitmap smallMarker = Bitmap.createScaledBitmap(b,90,150,false);
 
-                        BitmapDrawable bitmapdraw;
-                        Bitmap b;
-                        Bitmap smallMarker;
+                        LatLng point = new LatLng(Math.random()+37, Math.random()-123);
+                        String markerSnippet = " 위도: " + String.format("%.4f",point.latitude) + " 경도: " + String.format("%.4f",point.longitude);
+
                         MarkerOptions markerOptions = new MarkerOptions();
-                        if (distance(elem.getValue()[0], elem.getValue()[1], location.getLatitude(), location.getLongitude(), "kilometer") <= 10) {
-                            nearMarker.add(elem.getKey());
-                        }
-
-                        bitmapdraw = (BitmapDrawable) getResources().getDrawable(R.drawable.marker3);
-                        b = bitmapdraw.getBitmap();
-                        smallMarker = Bitmap.createScaledBitmap(b,90,150,false);
 
                         markerOptions
                                 .position(point)
-                                .title(elem.getKey())
+                                .title("O2I CN "+i)
                                 .snippet(markerSnippet)
                                 .icon(BitmapDescriptorFactory.fromBitmap(smallMarker));
 
-                        mMap.addMarker(markerOptions);
+                        markerMap.put("O2I CN "+i,mMap.addMarker(markerOptions));
                     }
-
-                    Log.i("nearMarker count", nearMarker.size()+"");
                     tracking=1;
+                    hotspot.setEnabled(true);
                 }
-
             }
 
         }

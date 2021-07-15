@@ -16,18 +16,18 @@
         android:layout_weight="9.5" >
 
         <fragment
+            android:id="@+id/map"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:id="@+id/map"
-            tools:context=".MapsActivity"
-            android:name="com.google.android.gms.maps.SupportMapFragment" />
+            tools:context=".MapsActivity" />
 
     </FrameLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="0.6"
+        android:layout_weight="0.7"
         android:background="@color/white">
 
         <Button
@@ -62,6 +62,7 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:text="접속가능한 핫스팟 확인"
+            android:textSize="12dp"
             android:textColor="@color/white"
             android:textStyle="bold"
             android:gravity="center"
@@ -76,6 +77,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:text="로그아웃"
+                android:textSize="12dp"
                 android:textColor="@color/white"
                 android:textStyle="bold"
                 android:gravity="center"

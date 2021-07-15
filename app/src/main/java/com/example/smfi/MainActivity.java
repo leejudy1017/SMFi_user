@@ -45,6 +45,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
+import androidx.room.ColumnInfo;
+import androidx.room.Dao;
+import androidx.room.Database;
+import androidx.room.Delete;
+import androidx.room.Entity;
+import androidx.room.Insert;
+import androidx.room.PrimaryKey;
+import androidx.room.Room;
+import androidx.room.RoomDatabase;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -59,6 +68,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -95,7 +105,7 @@ import okhttp3.Response;
 import retrofit2.Call;
 import retrofit2.Retrofit;
 
-public class MainActivity  extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
+public class MainActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
     private Marker currentMarker = null;
     private View mLayout;  // Snackbar 사용하기 위해서는 View가 필요합니다.
@@ -131,12 +141,31 @@ public class MainActivity  extends FragmentActivity implements OnMapReadyCallbac
 
     //marker 모음 {이름, Marker}
     HashMap<String, Marker> markerMap = new HashMap<>();
+    HashMap<String, Circle> circleMap = new HashMap<>();
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
+    private Context mContext;
+    String text;
+
+    LatLng[] antenna = new LatLng[900];
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mContext = this;
+
+        int x = 0;
+        //임의의 안테나값 (서버연동 예정)
+        //서울 반경 안테나분포
+        for (int i=0; i<30;i++){
+            for(int j=0;j<30;j++){
+                antenna[x] = new LatLng(37.413294+(0.0100613*i), 126.734086+(0.01784083*j));
+                x++;
+            }
+        }
+
+
+        text = PreferenceManager.getString(mContext,"rebuild");
 
         locationRequest = new LocationRequest()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
@@ -184,85 +213,40 @@ public class MainActivity  extends FragmentActivity implements OnMapReadyCallbac
 
             case R.id.hotspot:
 
-                arrayList.clear();
-                HashMap<String,Double> tempp = new HashMap<>();
-                Iterator<String> iterator = markerMap.keySet().iterator();
-                while(iterator.hasNext()){
-                    String key = iterator.next();
-                    Marker marker = markerMap.get(key);
-                    double temp = distance(marker.getPosition().latitude,marker.getPosition().longitude,location.getLatitude(),location.getLongitude(),"kilometer");
-                    if(temp<10){
-                        tempp.put(key,temp);
+                if(arrayList.size()!=0){
+                    for(int i =0;i<arrayList.size();i++){
+                        markerMap.get(arrayList.get(i)).remove();
+                        circleMap.get(arrayList.get(i)).remove();
+                    }
+                    arrayList.clear();
+                }
+
+                for(int x=0;x<antenna.length;x++){
+                    double temp_distance = distance(antenna[x].latitude,antenna[x].longitude,location.getLatitude(),location.getLongitude(),"meter");
+                    if(temp_distance<1000){
+                        BitmapDrawable bitmap = (BitmapDrawable) getResources().getDrawable(R.drawable.marker3);
+                        Bitmap b = bitmap.getBitmap();
+                        Bitmap smallMarker = Bitmap.createScaledBitmap(b,40,40,false);
+                        arrayList.add("ANTENNA "+x);
+                        markerMap.put("ANTENNA "+x,mMap.addMarker(new MarkerOptions()
+                        .title("ANTENNA "+x)
+                        .snippet("거리: "+String.format("%.2f",temp_distance)+" m")
+                        .position(new LatLng(antenna[x].latitude, antenna[x].longitude))
+                        .icon(BitmapDescriptorFactory.fromBitmap(smallMarker))));
+
+                        CircleOptions circleOptions =  new CircleOptions().center(markerMap.get("ANTENNA "+x).getPosition())
+                                .radius(500)
+                                .strokeWidth(0f)
+                                .fillColor(Color.parseColor("#880000ff"));
+
+                        circleMap.put("ANTENNA "+x,mMap.addCircle(circleOptions));
                     }
                 }
-                List<String> keySetList = new ArrayList<>(tempp.keySet());
-                Collections.sort(keySetList,((o1, o2) -> (tempp.get(o1).compareTo(tempp.get(o2)))));
 
-                for(String key:keySetList){
-                    arrayList.add(key+" | 약 "+String.format("%.2f",tempp.get(key))+" km");
-                }
-
+                Log.i("접속 가능한 핫스팟 수 : ", String.valueOf(arrayList.size()));
                 if(arrayList.size()==0){
-                    arrayList.add(" ");
+                    Toast.makeText(MainActivity.this, "사용할 수 있는 핫스팟이 존재하지 않습니다.", Toast.LENGTH_SHORT).show();
                 }
-
-                Log.i("arraySize: ", String.valueOf(arrayList.size()));
-                Log.i("arrayList: ", String.valueOf(arrayList));
-
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                View view = getLayoutInflater().inflate(R.layout.dialog_contect_list, null);
-                builder.setView(view);
-
-                final Spinner spinner = (Spinner)view.findViewById(R.id.spinner);
-
-                //spinner 높이 제한
-                try{
-                    Field popup = Spinner.class.getDeclaredField("mPopup");
-                    popup.setAccessible(true);
-                    ListPopupWindow window = (ListPopupWindow) popup.get(spinner);
-                    window.setHeight(700);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                ArrayAdapter adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item,arrayList);
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
-                    final String[] selected = {arrayList.get(0)};
-                    spinner.setAdapter(adapter);
-                    spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                        @Override
-                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                            selected[0] = arrayList.get(position);
-                        }
-
-                        @Override
-                        public void onNothingSelected(AdapterView<?> parent) {
-                            selected[0] = arrayList.get(0);
-                        }
-                    });
-
-                    final Button contactBtn = (Button) view.findViewById(R.id.contactBtn);
-                    final Button cancelBtn = (Button) view.findViewById(R.id.cancelBtn);
-                    final AlertDialog dialog = builder.create();
-
-                    contactBtn.setOnClickListener(v14 -> {
-                        if(arrayList.size()==1 && arrayList.get(0)==" "){
-                            Toast.makeText(MainActivity.this, "접속 가능한 핫스팟이 없습니다. ", Toast.LENGTH_SHORT).show(); }
-                        else{
-                            String title = selected[0].split(" ")[2];
-                            Log.i("selected: ", selected[0]);
-                            Log.i("title: ", title);
-
-                            CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLng(markerMap.get("O2I CN " + title).getPosition());
-                            mMap.moveCamera(cameraUpdate);
-                        }
-                        dialog.dismiss();
-                    });
-
-                    cancelBtn.setOnClickListener(v16 -> dialog.dismiss());
-                    builder.setView(view);
-                    dialog.show();
 
                 break;
 
@@ -464,7 +448,25 @@ public class MainActivity  extends FragmentActivity implements OnMapReadyCallbac
                 Log.d(TAG, "onMarkingResult : " + markingPoint);
 
                 if(connectMarker!=null){
+                    PreferenceManager.setString(mContext,"rebuild",connectMarker.getTitle());
+
+                    //거리가 멀어지면 연결해제
                     link.setText("연결된 SMART HOT SPOT : "+connectMarker.getTitle());
+                    if(distance(connectMarker.getPosition().latitude,connectMarker.getPosition().longitude,location.getLatitude(),location.getLongitude(),"kilometer")>10){
+                        Toast.makeText(MainActivity.this, connectMarker.getTitle()+" 와 거리가 멀어져서 연결이 해제되었습니다.", Toast.LENGTH_SHORT).show();
+                        PreferenceManager.setString(mContext,"rebuild","");
+
+                        //새로운 connection 생성
+                        BitmapDrawable bitmapdraw2 = (BitmapDrawable)getResources().getDrawable(R.drawable.marker3);
+                        Bitmap b2 = bitmapdraw2.getBitmap();
+                        Bitmap smallMarker2 = Bitmap.createScaledBitmap(b2,90,150,false);
+                        String markingPoint2 = "위도:" + String.format("%.4f",connectMarker.getPosition().latitude) + " 경도:" + String.format("%.4f",connectMarker.getPosition().longitude);
+
+                        markerMap.get(connectMarker.getTitle()).setIcon(BitmapDescriptorFactory.fromBitmap(smallMarker2));
+                        markerMap.get(connectMarker.getTitle()).setSnippet(markingPoint2);
+                        connectMarker=null;
+                        link.setText("");
+                    }
                 }
                 else{
                     link.setText("");
@@ -475,29 +477,16 @@ public class MainActivity  extends FragmentActivity implements OnMapReadyCallbac
                     //현재 위치에 마커 생성하고 이동
                     setCurrentLocation(location);
                     mCurrentLocatiion = location;
-
-                    //임의의 안테나값 (서버연동 예정)
-                    for (int i=0; i<1000;i++){
-
-                        BitmapDrawable bitmapdraw = (BitmapDrawable) getResources().getDrawable(R.drawable.marker3);
-                        Bitmap b = bitmapdraw.getBitmap();
-                        Bitmap smallMarker = Bitmap.createScaledBitmap(b,90,150,false);
-
-                        LatLng point = new LatLng(Math.random()+37, Math.random()-123);
-                        String markerSnippet = " 위도: " + String.format("%.4f",point.latitude) + " 경도: " + String.format("%.4f",point.longitude);
-
-                        MarkerOptions markerOptions = new MarkerOptions();
-
-                        markerOptions
-                                .position(point)
-                                .title("O2I CN "+i)
-                                .snippet(markerSnippet)
-                                .icon(BitmapDescriptorFactory.fromBitmap(smallMarker));
-
-                        markerMap.put("O2I CN "+i,mMap.addMarker(markerOptions));
-                    }
                     tracking=1;
                     hotspot.setEnabled(true);
+
+                    if(!text.equals("")){
+                        connectMarker= markerMap.get(text);
+                        Log.i("pre DATA: ",text);
+                    }
+                    else{
+                        Log.i("pre DATA: ","이전에 저장된 데이터가 없습니다.");
+                    }
                 }
             }
 
@@ -698,5 +687,6 @@ public class MainActivity  extends FragmentActivity implements OnMapReadyCallbac
     public boolean onMarkerClick(Marker marker) {
         return false;
     }
+
 }
 

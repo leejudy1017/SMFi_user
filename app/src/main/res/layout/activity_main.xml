@@ -22,6 +22,37 @@
             android:layout_height="match_parent"
             tools:context=".MapsActivity" />
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginRight="15dp"
+            android:layout_marginLeft="15dp">
+
+        <SeekBar
+            android:id="@+id/seekbar"
+            android:layout_width="250dp"
+            android:layout_height="60dp"
+            android:layout_gravity="left|bottom"
+            android:layout_marginBottom="10dp"
+            android:layout_marginRight="15dp"
+            android:max="20000"
+            android:min="500"
+            android:progress="500"
+            />
+
+        <TextView
+            android:id="@+id/seekbar_count"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_gravity="right|bottom"
+            android:layout_marginBottom="5dp"
+            android:layout_marginLeft="10dp"
+            android:gravity="center"
+            android:textSize="13dp"
+            android:textColor="@color/blue"
+            android:text="500 m" />
+
+        </LinearLayout>
     </FrameLayout>
 
     <LinearLayout
@@ -37,6 +68,7 @@
             android:stateListAnimator="@null"
             android:textColor="@color/blue"
             android:textStyle="bold"
+            android:textSize="12dp"
             android:backgroundTint="@color/tumyeongsaeg">
         </Button>
 
@@ -56,20 +88,21 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent">
-        <Button
-            android:id="@+id/hotspot"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:text="접속가능한 핫스팟 확인"
-            android:textSize="12dp"
-            android:textColor="@color/white"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:textAllCaps="false"
-            android:stateListAnimator="@null"
-            android:onClick="onClick"
-            android:backgroundTint="@color/blue"/>
+
+            <Button
+                android:id="@+id/hotspot"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="접속가능한 핫스팟 확인"
+                android:textSize="12dp"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:textAllCaps="false"
+                android:stateListAnimator="@null"
+                android:onClick="onClick"
+                android:backgroundTint="@color/blue"/>
 
             <Button
                 android:id="@+id/logout"

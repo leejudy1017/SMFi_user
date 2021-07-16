@@ -33,6 +33,7 @@ import android.widget.LinearLayout;
 import android.widget.ListPopupWindow;
 import android.widget.ListView;
 import android.widget.SearchView;
+import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -148,11 +149,42 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     LatLng[] antenna = new LatLng[900];
 
+    SeekBar seekBar;
+    TextView seekBar_count;
+    int seek;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mContext = this;
+
+        seekBar =findViewById(R.id.seekbar);
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+
+                if(progress%50==0){
+                    seekBar_count.setText(progress+ " m");
+                }
+                else {
+                    seekBar.setProgress((progress/50)*50);
+                    seekBar_count.setText((progress/50)*50 + " m");
+                    seek = (progress/50)*50;
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+        seekBar_count = findViewById(R.id.seekbar_count);
 
         int x = 0;
         //임의의 안테나값 (서버연동 예정)
@@ -194,7 +226,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
-
         //구글 맵 호출
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this); //getMapAsync must be called on the main thread.
@@ -223,7 +254,28 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
                 for(int x=0;x<antenna.length;x++){
                     double temp_distance = distance(antenna[x].latitude,antenna[x].longitude,location.getLatitude(),location.getLongitude(),"meter");
-                    if(temp_distance<1000){
+                    if(temp_distance<seek){
+                        if(connectMarker!=null && connectMarker.getTitle().equals("ANTENNA "+x)){
+
+                            BitmapDrawable bitmapdraw = (BitmapDrawable)getResources().getDrawable(R.drawable.marker4);
+                            Bitmap b = bitmapdraw.getBitmap();
+                            Bitmap smallMarker = Bitmap.createScaledBitmap(b,90,150,false);
+                            arrayList.add("ANTENNA "+x);
+                            markerMap.put("ANTENNA "+x,mMap.addMarker(new MarkerOptions()
+                                    .title("ANTENNA "+x)
+                                    .snippet("접속되었습니다.")
+                                    .position(new LatLng(antenna[x].latitude, antenna[x].longitude))
+                                    .icon(BitmapDescriptorFactory.fromBitmap(smallMarker))));
+
+                            CircleOptions circleOptions =  new CircleOptions().center(markerMap.get("ANTENNA "+x).getPosition())
+                                    .radius(500)
+                                    .strokeWidth(0f)
+                                    .fillColor(Color.parseColor("#880000ff"));
+
+                            circleMap.put("ANTENNA "+x,mMap.addCircle(circleOptions));
+                            Toast.makeText(MainActivity.this, "ANTENNA "+x+" 와 연결되어 있습니다.", Toast.LENGTH_SHORT).show();
+                        }
+                        else{
                         BitmapDrawable bitmap = (BitmapDrawable) getResources().getDrawable(R.drawable.marker3);
                         Bitmap b = bitmap.getBitmap();
                         Bitmap smallMarker = Bitmap.createScaledBitmap(b,40,40,false);
@@ -240,6 +292,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                                 .fillColor(Color.parseColor("#880000ff"));
 
                         circleMap.put("ANTENNA "+x,mMap.addCircle(circleOptions));
+                    }
                     }
                 }
 
@@ -317,7 +370,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             LayoutInflater inflater = getLayoutInflater();
 
 
-            if (distance(markerMap.get(marker.getTitle()).getPosition().latitude,markerMap.get(marker.getTitle()).getPosition().longitude, location.getLatitude(), location.getLongitude(), "kilometer") <= 10) {
+            if (distance(markerMap.get(marker.getTitle()).getPosition().latitude,markerMap.get(marker.getTitle()).getPosition().longitude, location.getLatitude(), location.getLongitude(), "meter") <= seek) {
 
                 if(connectMarker!=null && connectMarker.getTitle().equals(marker.getTitle())){
 
@@ -335,7 +388,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                     discontactBtn.setOnClickListener(v -> {
                         BitmapDrawable bitmapdraw = (BitmapDrawable)getResources().getDrawable(R.drawable.marker3);
                         Bitmap b = bitmapdraw.getBitmap();
-                        Bitmap smallMarker = Bitmap.createScaledBitmap(b,90,150,false);
+                        Bitmap smallMarker = Bitmap.createScaledBitmap(b,40,40,false);
                         String markingPoint = "위도:" + String.format("%.4f",marker.getPosition().latitude)+ " 경도:" + String.format("%.4f",marker.getPosition().longitude);
                         marker.setSnippet(markingPoint);
                         marker.setIcon(BitmapDescriptorFactory.fromBitmap(smallMarker));
@@ -392,32 +445,41 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                         });
 
                         discontactBtn.setOnClickListener(v -> {
-                            String pre="" ;
 
                             //이전 connection 해제
-                            BitmapDrawable bitmapdraw = (BitmapDrawable)getResources().getDrawable(R.drawable.marker3);
-                            Bitmap b = bitmapdraw.getBitmap();
-                            Bitmap smallMarker = Bitmap.createScaledBitmap(b,90,150,false);
-                            String markingPoint = "위도:" + String.format("%.4f",connectMarker.getPosition().latitude) + " 경도:" + String.format("%.4f",connectMarker.getPosition().longitude);
+                            markerMap.get(connectMarker.getTitle()).remove();
 
-                            connectMarker.setSnippet(markingPoint);
-                            connectMarker.setIcon(BitmapDescriptorFactory.fromBitmap(smallMarker));
-                            pre = connectMarker.getTitle();
+                            double temp_distance = distance(connectMarker.getPosition().latitude, connectMarker.getPosition().longitude,location.getLatitude(),location.getLongitude(),"meter");
 
-                            connectMarker=null;
+                            if(temp_distance<seek) {
+                                //이전 connection 해제
+                                BitmapDrawable bitmapdraw = (BitmapDrawable) getResources().getDrawable(R.drawable.marker3);
+                                Bitmap b = bitmapdraw.getBitmap();
+                                Bitmap smallMarker = Bitmap.createScaledBitmap(b, 40, 40, false);
+                                String markingPoint = "위도:" + String.format("%.4f", connectMarker.getPosition().latitude) + " 경도:" + String.format("%.4f", connectMarker.getPosition().longitude);
 
+                                markerMap.put(connectMarker.getTitle(), mMap.addMarker(new MarkerOptions()
+                                        .title(connectMarker.getTitle())
+                                        .snippet("거리: " + String.format("%.2f", temp_distance) + " m")
+                                        .position(new LatLng(connectMarker.getPosition().latitude, connectMarker.getPosition().longitude))
+                                        .icon(BitmapDescriptorFactory.fromBitmap(smallMarker))));
+
+                                Toast.makeText(MainActivity.this, connectMarker.getTitle()+" 와 연결을 해제하였습니다.", Toast.LENGTH_SHORT).show();
+                            }
                             //새로운 connection 생성
+                            connectMarker = marker;
+                            markerMap.get(marker.getTitle()).remove();
+
                             BitmapDrawable bitmapdraw2 = (BitmapDrawable)getResources().getDrawable(R.drawable.marker4);
                             Bitmap b2 = bitmapdraw2.getBitmap();
                             Bitmap smallMarker2 = Bitmap.createScaledBitmap(b2,90,150,false);
 
-                            marker.setSnippet("접속되었습니다.");
-                            marker.setIcon(BitmapDescriptorFactory.fromBitmap(smallMarker2));
+                            markerMap.put(connectMarker.getTitle(), mMap.addMarker(new MarkerOptions()
+                                    .title(connectMarker.getTitle())
+                                    .snippet("접속되었습니다.")
+                                    .position(new LatLng(connectMarker.getPosition().latitude, connectMarker.getPosition().longitude))
+                                    .icon(BitmapDescriptorFactory.fromBitmap(smallMarker2))));
 
-                            connectMarker = marker;
-
-
-                            Toast.makeText(MainActivity.this, pre+" 와 연결을 해제하고 \n"+marker.getTitle()+" 에 연결되었습니다.", Toast.LENGTH_SHORT).show();
                             dialog.dismiss();
                         });
                         dialog.show();
@@ -449,21 +511,27 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
                 if(connectMarker!=null){
                     PreferenceManager.setString(mContext,"rebuild",connectMarker.getTitle());
-
                     //거리가 멀어지면 연결해제
                     link.setText("연결된 SMART HOT SPOT : "+connectMarker.getTitle());
-                    if(distance(connectMarker.getPosition().latitude,connectMarker.getPosition().longitude,location.getLatitude(),location.getLongitude(),"kilometer")>10){
-                        Toast.makeText(MainActivity.this, connectMarker.getTitle()+" 와 거리가 멀어져서 연결이 해제되었습니다.", Toast.LENGTH_SHORT).show();
+
+                    if(distance(connectMarker.getPosition().latitude,connectMarker.getPosition().longitude,location.getLatitude(),location.getLongitude(),"meter")>seek){
+                        Toast.makeText(MainActivity.this, connectMarker.getTitle()+" 와 거리가 멀어져서 \n연결이 해제되었습니다.", Toast.LENGTH_SHORT).show();
                         PreferenceManager.setString(mContext,"rebuild","");
 
                         //새로운 connection 생성
                         BitmapDrawable bitmapdraw2 = (BitmapDrawable)getResources().getDrawable(R.drawable.marker3);
                         Bitmap b2 = bitmapdraw2.getBitmap();
-                        Bitmap smallMarker2 = Bitmap.createScaledBitmap(b2,90,150,false);
+                        Bitmap smallMarker2 = Bitmap.createScaledBitmap(b2,40,40,false);
                         String markingPoint2 = "위도:" + String.format("%.4f",connectMarker.getPosition().latitude) + " 경도:" + String.format("%.4f",connectMarker.getPosition().longitude);
 
-                        markerMap.get(connectMarker.getTitle()).setIcon(BitmapDescriptorFactory.fromBitmap(smallMarker2));
-                        markerMap.get(connectMarker.getTitle()).setSnippet(markingPoint2);
+                        markerMap.get(connectMarker.getTitle()).remove();
+
+                        markerMap.put(connectMarker.getTitle(), mMap.addMarker(new MarkerOptions()
+                                .title(connectMarker.getTitle())
+                                .snippet(markingPoint2)
+                                .position(new LatLng(connectMarker.getPosition().latitude, connectMarker.getPosition().longitude))
+                                .icon(BitmapDescriptorFactory.fromBitmap(smallMarker2))));
+
                         connectMarker=null;
                         link.setText("");
                     }
@@ -481,8 +549,28 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                     hotspot.setEnabled(true);
 
                     if(!text.equals("")){
-                        connectMarker= markerMap.get(text);
+
+                        BitmapDrawable bitmapdraw = (BitmapDrawable)getResources().getDrawable(R.drawable.marker4);
+                        Bitmap b = bitmapdraw.getBitmap();
+                        Bitmap smallMarker = Bitmap.createScaledBitmap(b,90,150,false);
+                        arrayList.add(text);
+                        markerMap.put(text,mMap.addMarker(new MarkerOptions()
+                                .title(text)
+                                .snippet("접속되었습니다.")
+                                .position(new LatLng(antenna[(int) Double.parseDouble(text.split(" ")[1])].latitude, antenna[(int) Double.parseDouble(text.split(" ")[1])].longitude))
+                                .icon(BitmapDescriptorFactory.fromBitmap(smallMarker))));
+
+                        CircleOptions circleOptions =  new CircleOptions().center(markerMap.get(text).getPosition())
+                                .radius(500)
+                                .strokeWidth(0f)
+                                .fillColor(Color.parseColor("#880000ff"));
+
+                        circleMap.put(text,mMap.addCircle(circleOptions));
+                        //Toast.makeText(MainActivity.this, text+" 와 연결되어 있습니다", Toast.LENGTH_SHORT).show();
+
+                        connectMarker = markerMap.get(text);
                         Log.i("pre DATA: ",text);
+                        Log.i("pre DATA: ", connectMarker.toString());
                     }
                     else{
                         Log.i("pre DATA: ","이전에 저장된 데이터가 없습니다.");

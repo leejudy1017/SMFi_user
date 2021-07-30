@@ -191,7 +191,12 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         //서울 반경 안테나분포
         for (int i=0; i<30;i++){
             for(int j=0;j<30;j++){
+
+                //korea
                 antenna[x] = new LatLng(37.413294+(0.0100613*i), 126.734086+(0.01784083*j));
+
+                //google
+                //antenna[x] = new LatLng(Math.random()+37, Math.random()-123);
                 x++;
             }
         }

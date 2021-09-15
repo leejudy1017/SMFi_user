@@ -1,9 +1,6 @@
-# SMART Hot Spot Application 1.0
-
-
 ## 개요
 
-최적의 방법으로 사용자들이 SMFi 인터넷 망을 이용할 수 있도록 가장 가까운 위치에 위치한 안테나를 안내하여 연결해준다.
+최적의 방법으로 사용자들이 인터넷 망을 이용할 수 있도록 할 때, 안테나 사이의 거리, 각도, 안테나가 세워질 곳의 경도 위도 등을 관리자가 손쉽게 계산하고 관리할 수 있도록 한다.
 
 ## 개발환경
 
@@ -16,81 +13,70 @@
 
 ### Function 1 : 사용자 현재 위치 확인
 
-![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/b6cad722-1837-43ce-927c-6f7d61f8ce82/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/b6cad722-1837-43ce-927c-6f7d61f8ce82/Untitled.png)
-
-사용자 실시간 위치 확인을 위한 permission
-
-![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/095052dc-0392-458a-a9e9-3350ad9fd381/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/095052dc-0392-458a-a9e9-3350ad9fd381/Untitled.png)
-
-현재 에뮬레이터 시연으로 현재 위치 감지 안됨
-
-![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/a5f2b36b-d268-487e-b387-f4d58bfb7ee0/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/a5f2b36b-d268-487e-b387-f4d58bfb7ee0/Untitled.png)
-
-사용자의 실시간 위치 log로 확인 가능
+![1](https://user-images.githubusercontent.com/70352603/133383184-cb999d51-8a00-48be-b8fc-a7c699a97e51.png)
 
 - 사용자의 현재 위치를 초기 화면으로 보여준다.
-- 사용자는 사용자의 움직이는 위치를 실시간으로 파란색 표식을 통해 확인할 수 있다.
+- 사용자는 사용자의 움직이는 위치를 실시간으로 파란색 표식을 통해 확인할 수 있고, 관리자는 log에 찍히는 위도, 경도로 확인할 수 있다.
+- 카메라는 사용자의 현재 위치를 초기 화면으로 제공하고, 이 후 사용자의 검색이나  드래그를 통한 지도 이동을 포커싱한다. (tracking 변수 값으로 확인)
 
 * 현재 에뮬레이터 시연 화면으로 현재 위치가 구글 본사로 보여지고 있으나, 실제 테스트 핸드폰으로는 사용자의 현재 위치 감지.
 
-### Function 2 : 접속 가능한 SMART Hot spot 검색
+### Function 2 : 검색 기능
 
-![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/cfdfce0f-34e0-4ca6-9237-6e83b600701b/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/cfdfce0f-34e0-4ca6-9237-6e83b600701b/Untitled.png)
+![2](https://user-images.githubusercontent.com/70352603/133383190-0a6e4465-a757-42c4-9831-f78aa71983e4.png)
 
-일정 범위 내의 핫스팟이 존재하지 않는 경우
+- 상단의 검색 기능은 geocoder 를 사용하였다.
+- 도로명, 주소명으로 위치를 입력할 시 해당 위치에 TP를 설정할 수 있다. (건물명은 검색되지 않는다.)
+- 생성된 TP의 상세 주소,경도,위도를 확인할 수 있다.
+- 외국 주소도 지원한다.
 
-![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ac0d5241-7e39-4812-aae6-833526c1ba86/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ac0d5241-7e39-4812-aae6-833526c1ba86/Untitled.png)
+### Function 3 : TP 설정기능
 
-범위 내에 핫스팟이 존재하는 경우
+![3](https://user-images.githubusercontent.com/70352603/133383198-dbac9bf5-5fb7-42af-9415-e56e922c965b.png)
 
-- 접속 가능한 핫스팟 확인 버튼을 누르면 사용자 위치를 중심으로 반경 범위 내의 핫스팟을 확인할 수 있다.
-- 접속 가능한 핫스팟이 존재하지 않는 경우 메세지가 출력되며 반경 범위를 조정하며 재탐색하도록 한다.
-- 접속 가능한 핫스팟이 존재하는 경우 해당 안테나 위치가 보여지며 반경범위까지 확인할 수 있다.
+- Map 의 임의의 위치를 길게 누르게 되면 TP 설정이 가능해진다.
+- TP를 클릭하면 해당 위치의 주소, 경도, 위도를 확인할 수 있다.
+- TP의 말풍선을 클릭하면 해당 TP를 삭제할 수 있다.
+- (+) 버튼을 클릭하면 사용자가 직접 위도, 경도 값을 입력하여 해당 위치에 TP를 추가할 수 있다.
 
-### Function 3 : Hot spot 접속
+### Function 4 : 현재 위치에서부터 TP까지의 거리 확인
 
-![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/707d73e4-edfc-461c-9831-1b00ef652567/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/707d73e4-edfc-461c-9831-1b00ef652567/Untitled.png)
+![4](https://user-images.githubusercontent.com/70352603/133383208-87c243e8-569f-455d-ae55-77da5ab7f17f.png)
 
-핫스팟 클릭시 해당 핫스팟까지의 거리를 확인
+- TP를 설정하면 사용자의 현재 위치와 설정한 TP 사이의 거리를 확인할 수 있다.
 
-![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/2b87ed98-9f5b-48d2-b088-d2946c19623b/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/2b87ed98-9f5b-48d2-b088-d2946c19623b/Untitled.png)
+### Function 5 : Site 설정
 
-말풍선을 누르면 핫스팟에 접속이 가능
+![5](https://user-images.githubusercontent.com/70352603/133383221-2e9f9848-848f-4e31-bdd0-399dca595f5a.png)
 
-![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/544419a3-ca34-4828-a0dd-68d8ab526a01/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/544419a3-ca34-4828-a0dd-68d8ab526a01/Untitled.png)
+- 사용자가 TP의 일정 반경 내에 들어올 경우 Site 설정 가능하다는 메세지가 뜬다.
+- Site 설정 버튼을 누르면 사용자의 현재 위치에 Site가 설정된다.
+- 설정된 Site 정보는 하단에 기재된다.
 
-핫스팟에 접속 시 마커가 생성
+### Function 6 : 오차 범위 설정
 
-- 일정 반경 내에 있어 활성화된 안테나를 클릭하여 해당 핫스팟에 접속이 가능하다.
-- 핫스팟에 접속하면 해당 안테나에 마커가 생성되고 하단에 연결된 핫스팟이 보여진다.
+![6](https://user-images.githubusercontent.com/70352603/133383234-487ce023-7350-4d63-974c-b7cca1f2841c.png)
 
-### Function 4 : HOT SPOT 해제
+- 사용자가 TP의 어느정도의 반경 내에 들어와야 Site 설정이 가능할지에 따른 오차 범위를 설정한다.
+- 오차 범위가 설정되면 TP의 오차범위 범주를 확인할 수 있도록 TP 주변에 원이 그려진다.
 
-![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/b8d27826-ccb2-4cc7-a896-7d4b4d48cf63/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/b8d27826-ccb2-4cc7-a896-7d4b4d48cf63/Untitled.png)
+### Function 7 : TP 안테나 각도 설정
 
-안테나 접속 해제
+![7](https://user-images.githubusercontent.com/70352603/133383243-b7c4d0f6-0f08-4d2f-8c34-c8dbdba98edd.png)
 
-![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/2272d19f-0991-46f6-ae1e-6f1039ccf9d9/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/2272d19f-0991-46f6-ae1e-6f1039ccf9d9/Untitled.png)
+- TP 각각에 대한 안테나 각도를 설정한다.
+- Site가 모두 설정되면 안테나 각도와 Site 사이의 거리를 기반으로 빔아크를 계산하여 하단에 기재한다.
 
-- 접속한 안테나의 말풍선을 누르면 접속 해제가 가능하다.
-
-### Function 5 : 반경 범위 설정
-
-![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/5ab86fbc-3274-4f6f-9e31-268a91d40849/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/5ab86fbc-3274-4f6f-9e31-268a91d40849/Untitled.png)
-
-- 지도의 하단 부를 보면 반경 범위 설정이 가능하다.
-- progress bar 를 통해 현재 위치에서부터 얼마나 떨어진 안테나까지 검색할지 설정할 수 있다.
+* 현재 에뮬레이터 시연으로 Site 두개가 모두 같은 위치에 찍히게 되어 거리와 빔아크의 계산값이 모두 0으로 나온다.
 
 ### ETC.
 
-![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/3329accc-6c6c-4efc-8b56-7da99dca0ed6/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/3329accc-6c6c-4efc-8b56-7da99dca0ed6/Untitled.png)
+![8](https://user-images.githubusercontent.com/70352603/133383265-23bd1b23-1dd0-4669-907c-a3d98beed553.png)
 
-로그아웃 시 초기 화면으로 이동
-
-- 로그아웃 버튼 클릭 시, 초기 화면으로 이동한다.
-- logout 버튼 혹은 어플을 나가더라도 사용자가 접속한 HOT SPOT이 존재하다면 해당 정보를 SharedPreferences를 통해 관리하여 정보를 저장한다.
+- Clear 버튼 클릭 시, Site 과 marker 가 TP가 카메라가 현재 위치를 가리킨다.
+- logout 버튼 혹은 어플을 나가더라도 사용자가 설정해 둔 TP, Site 가 존재하다면 해당 정보를 SharedPreferences를 통해 관리하여 정보를 저장한다.
 
 ## 개발 계획
 
-- DB 구축과 서버 연동을 통해 안테나의 정확한 위치 설정
-- 실제 사용자가 해당 안테나와 연결하여 인터넷망을 이용할 수 있도록 작업
+- 서버 연결을 통해 Site 사이의 관계 상세분석
+- 사용자 DB를 만들어서, login & join 기능 활성화
